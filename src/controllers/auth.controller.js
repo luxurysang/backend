@@ -8,7 +8,7 @@ var bcrypt = require("bcryptjs");
 
 exports.signup = (req, res) => {
   const user = new User({
-    name: req.body.name,
+    fullname: req.body.fullname,
     mail: req.body.mail,
     password: bcrypt.hashSync(req.body.password, 8)
   });
@@ -64,22 +64,22 @@ exports.signup = (req, res) => {
 
 exports.signin = (req, res) => {
   User.findOne({
-    name: req.body.name
+    mail: req.body.mail
   })
     .populate("roles", "-__v")
-    .exec((err, user) => {
+    .exec((err, mail) => {
       if (err) {
         res.status(500).send({ message: err });
         return;
       }
 
-      if (!user) {
+      if (!mail) {
         return res.status(404).send({ message: "User Not found." });
       }
 
       var passwordIsValid = bcrypt.compareSync(
         req.body.password,
-        user.password
+        mail.password
       );
 
       if (!passwordIsValid) {
@@ -89,19 +89,19 @@ exports.signin = (req, res) => {
         });
       }
 
-      var token = jwt.sign({ id: user.id }, config.secret, {
+      var token = jwt.sign({ id: mail.id }, config.secret, {
         expiresIn: 86400 // 24 hours
       });
 
       var authorities = [];
 
-      for (let i = 0; i < user.roles.length; i++) {
-        authorities.push("ROLE_" + user.roles[i].name.toUpperCase());
+      for (let i = 0; i < mail.roles.length; i++) {
+        authorities.push("ROLE_" + mail.roles[i].name.toUpperCase());
       }
       res.status(200).send({
-        id: user._id,
-        name: user.name,
-        mail: user.mail,
+        id: mail._id,
+        fullname: mail.fullname,
+        mail: mail.mail,
         roles: authorities,
         accessToken: token
       });
